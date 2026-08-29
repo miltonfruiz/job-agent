@@ -124,6 +124,7 @@ def tailor_resume(state: AgentState) -> dict:
 
     return {
         "tailored_cv": tailored_cv,
+        # se resetean las notas: ya fueron aplicadas en esta vuelta
         "revision_notes": None,
         "trajectory_log": log_step(
             state,
@@ -134,15 +135,141 @@ def tailor_resume(state: AgentState) -> dict:
     }
 
 
+_GENERATE_COVER_LETTER_SYSTEM_PROMPT = """Sos un asesor de carrera que escribe
+cartas de presentación profesionales.
+
+Reglas estrictas de fidelidad (NO NEGOCIABLES):
+- Basate únicamente en lo que dice literalmente el CV adaptado (tailored_cv).
+  NUNCA inventes logros, tecnologías, servicios específicos, fechas o
+  detalles que no estén ahí.
+- Si el CV dice "AWS" a secas, NO digas que la experiencia "cubre" o
+  "incluye" servicios específicos como EC2, RDS, S3, etc. Mencionar la
+  vacante no te da permiso para asumir que el candidato tiene esa
+  especificidad si el CV no la tiene.
+- NO menciones CI/CD, pipelines, GitHub Actions, testing frameworks u
+  otras prácticas/herramientas que no estén explícitamente en el CV
+  adaptado, aunque la vacante las pida.
+- No uses frases que "traduzcan" una skill genérica del CV en una
+  específica de la vacante (ej: CV dice "AWS", vacante pide "RDS" → NO
+  escribas que el candidato tiene experiencia en RDS).
+- NO inventes motivación personal específica hacia la empresa (ej: "siempre
+  soñé con trabajar aquí", "admiro profundamente su misión") — no tenés
+  forma de saber eso y sería tan deshonesto como inventar experiencia. En
+  su lugar, conectá objetivamente la experiencia real del candidato con lo
+  que la vacante pide (role_summary y must_have_skills).
+- Tono profesional, directo, sin relleno genérico ("soy una persona
+  proactiva y comprometida" sin evidencia concreta que lo respalde).
+- Extensión: 3-4 párrafos cortos. Sin encabezados de carta formal (fecha,
+  dirección) — solo el cuerpo del texto.
+
+Si recibís notas de revisión de una vuelta anterior, aplicá exactamente esos
+cambios sobre la carta ya generada, sin rehacer todo desde cero."""
+
+
 def generate_cover_letter(state: AgentState) -> dict:
-    # TODO: usar state["job_requirements"] + state["tailored_cv"]
-    raise NotImplementedError
+    llm = ChatGroq(
+        model=_MODEL_NAME,
+        temperature=0.1,
+        max_tokens=2048,
+        model_kwargs={"reasoning_effort": "low"},
+    )
+
+    is_revision = bool(state.get("revision_notes"))
+
+    if is_revision:
+        human_message = (
+            f"Carta generada en la vuelta anterior:\n{state['cover_letter']}\n\n"
+            f"Notas de revisión del humano:\n{state['revision_notes']}\n\n"
+            "Aplicá estos cambios y devolvé la carta completa actualizada."
+        )
+        input_summary = f"revisión: {state['revision_notes'][:200]}"
+    else:
+        human_message = (
+            f"CV adaptado del candidato:\n{state['tailored_cv']}\n\n"
+            f"Resumen del rol y requisitos (JSON):\n"
+            f"{json.dumps(state['job_requirements'], ensure_ascii=False, indent=2)}"
+        )
+        input_summary = "primera generación de la carta"
+
+    result = llm.invoke(
+        [
+            ("system", _GENERATE_COVER_LETTER_SYSTEM_PROMPT),
+            ("human", human_message),
+        ]
+    )
+    cover_letter = result.content
+
+    return {
+        "cover_letter": cover_letter,
+        "revision_notes": None,
+        "trajectory_log": log_step(
+            state,
+            node="generate_cover_letter",
+            input_summary=input_summary,
+            output_summary=f"Carta generada ({len(cover_letter)} chars)",
+        ),
+    }
+
+
+_MAX_GROUNDING_RETRIES = 2
+
+
+def verify_grounding(state: AgentState) -> dict:
+    """Verificación determinística (sin LLM) de que el CV adaptado y la
+    carta no contengan keywords de la vacante que no estaban en el CV
+    original. Si un término solo aparece en el output y no en el CV real,
+    solo pudo llegar ahí copiado de la vacante -> alucinación de
+    especificidad, el mismo patrón que causó las alucinaciones de
+    AWS/RDS/EC2/CI-CD documentadas en el changelog.
+    """
+    cv_lower = state["cv_raw"].lower()
+    tailored_lower = (state.get("tailored_cv") or "").lower()
+    letter_lower = (state.get("cover_letter") or "").lower()
+
+    violations = []
+    for keyword in state["job_requirements"].get("keywords", []):
+        kw_lower = keyword.lower()
+        if kw_lower in cv_lower:
+            continue  # está genuinamente en el CV, no es alucinación
+        if kw_lower in tailored_lower or kw_lower in letter_lower:
+            violations.append(keyword)
+
+    retries = state.get("grounding_retries", 0)
+    grounded = len(violations) == 0
+    should_retry = not grounded and retries < _MAX_GROUNDING_RETRIES
+
+    revision_notes = None
+    if should_retry:
+        revision_notes = (
+            "Verificación automática detectó términos que aparecen en el "
+            "CV adaptado o la carta pero NO en el CV original: "
+            f"{', '.join(violations)}. Estos términos vienen de la vacante, "
+            "no del candidato. Remové o generalizá estas menciones "
+            "(ej: si dijiste 'RDS' pero el CV solo tiene 'AWS', volvé a "
+            "escribir 'AWS' a secas)."
+        )
+
+    return {
+        "grounding_violations": violations,
+        "grounding_retries": retries + 1 if should_retry else retries,
+        "revision_notes": revision_notes,
+        "trajectory_log": log_step(
+            state,
+            node="verify_grounding",
+            input_summary=f"chequeando {len(state['job_requirements'].get('keywords', []))} keywords",
+            output_summary=(
+                "sin violaciones, grounding OK"
+                if grounded
+                else f"{len(violations)} violaciones detectadas: {violations} "
+                f"({'reintentando' if should_retry else 'límite de reintentos alcanzado'})"
+            ),
+        ),
+    }
 
 
 def score_ats(state: AgentState) -> dict:
     # TODO: comparar state["tailored_cv"] contra state["job_requirements"]
     # y devolver {"ats_score": {"score": 0-100, "missing_keywords": [...]}}
-    # Esto funciona como verificación automática antes del checkpoint humano.
     raise NotImplementedError
 
 

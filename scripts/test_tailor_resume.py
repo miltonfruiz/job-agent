@@ -5,6 +5,9 @@ texto pegado en la terminal.
 Uso:
     python scripts/test_tailor_resume.py starter_materials/job_postings/job_01_backend_python.txt
 
+Requiere que ya hayas corrido parse_job sobre la misma vacante, o corre
+parse_job automáticamente si no le pasás job_requirements ya calculados.
+
 Guarda el resultado en trajectories/ con timestamp, para tener evidencia
 reproducible del entregable "agent trajectories".
 """
@@ -16,7 +19,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.graph.nodes import parse_job, tailor_resume  # noqa: E402
+from app.graph.nodes import (  # noqa: E402
+    parse_job,
+    tailor_resume,
+    generate_cover_letter,
+    verify_grounding,
+)
 
 CV_PATH = Path("starter_materials/cvs/milton_cv.txt")
 TRAJECTORIES_DIR = Path("trajectories")
@@ -46,6 +54,30 @@ def main():
     tailor_result = tailor_resume(state)
     state.update(tailor_result)
     print(state["tailored_cv"])
+
+    print("\n--- Generando carta de presentación ---")
+    letter_result = generate_cover_letter(state)
+    state.update(letter_result)
+    print(state["cover_letter"])
+
+    state.setdefault("grounding_retries", 0)
+    print("\n--- Verificando grounding ---")
+    for attempt in range(3):  # 1 chequeo inicial + hasta 2 reintentos
+        grounding_result = verify_grounding(state)
+        state.update(grounding_result)
+        print(f"Violaciones: {state['grounding_violations']}")
+
+        if not state.get("revision_notes"):
+            print("Grounding OK, sin alucinaciones detectadas.")
+            break
+
+        print(f"Reintentando (vuelta {attempt + 1})...")
+        state.update(tailor_resume(state))
+        state.update(generate_cover_letter(state))
+        print("--- CV re-adaptado ---")
+        print(state["tailored_cv"])
+        print("--- Carta regenerada ---")
+        print(state["cover_letter"])
 
     TRAJECTORIES_DIR.mkdir(exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

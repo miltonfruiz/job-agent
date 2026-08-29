@@ -5,10 +5,20 @@ from app.graph.nodes import (
     parse_job,
     tailor_resume,
     generate_cover_letter,
+    verify_grounding,
     score_ats,
     human_checkpoint,
     finalize,
 )
+
+
+def route_after_grounding(state: AgentState) -> str:
+    """Si la verificación automática encontró alucinaciones y quedan
+    reintentos, vuelve a tailor_resume con las notas de revisión. Si está
+    limpio (o se acabaron los reintentos), sigue a score_ats."""
+    if state.get("revision_notes"):
+        return "tailor_resume"
+    return "score_ats"
 
 
 def route_after_checkpoint(state: AgentState) -> str:
@@ -24,6 +34,7 @@ def build_graph():
     graph.add_node("parse_job", parse_job)
     graph.add_node("tailor_resume", tailor_resume)
     graph.add_node("generate_cover_letter", generate_cover_letter)
+    graph.add_node("verify_grounding", verify_grounding)
     graph.add_node("score_ats", score_ats)
     graph.add_node("human_checkpoint", human_checkpoint)
     graph.add_node("finalize", finalize)
@@ -31,7 +42,13 @@ def build_graph():
     graph.set_entry_point("parse_job")
     graph.add_edge("parse_job", "tailor_resume")
     graph.add_edge("tailor_resume", "generate_cover_letter")
-    graph.add_edge("generate_cover_letter", "score_ats")
+    graph.add_edge("generate_cover_letter", "verify_grounding")
+
+    graph.add_conditional_edges(
+        "verify_grounding",
+        route_after_grounding,
+        {"tailor_resume": "tailor_resume", "score_ats": "score_ats"},
+    )
     graph.add_edge("score_ats", "human_checkpoint")
 
     graph.add_conditional_edges(

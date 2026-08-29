@@ -11,3 +11,5 @@ class AgentState(TypedDict):
     human_approved: Optional[bool]
     revision_notes: Optional[str]
     trajectory_log: list
+    grounding_violations: Optional[list]
+    grounding_retries: int
