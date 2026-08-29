@@ -7,17 +7,20 @@ Convención: cada nodo apendea un entry a trajectory_log con
 de "agent trajectories" del hackathon.
 """
 
+import app.config  # noqa: F401  (carga las variables de .env como side effect)
 from langchain_groq import ChatGroq
 
 from app.graph.state import AgentState
 from app.graph.trajectory import log_step
 from app.schemas.job_requirements import JobRequirements
 
-# Modelo rápido para iterar durante el desarrollo. Evaluar al final del
-# hackathon si llama-3.3-70b-versatile mejora el score ATS lo suficiente
-# como para justificar la latencia extra en la solución "avanzada"
-# (ver docs/CHANGELOG.md).
-_MODEL_NAME = "llama-3.1-8b-instant"
+# Modelo rápido para iterar durante el desarrollo. Groq deprecó los modelos
+# Llama (llama-3.1-8b-instant / llama-3.3-70b-versatile) en agosto 2026;
+# gpt-oss-20b es el reemplazo recomendado para uso rápido/económico.
+# Evaluar al final del hackathon si openai/gpt-oss-120b mejora el score ATS
+# lo suficiente como para justificar la latencia extra en la solución
+# "avanzada" (ver docs/CHANGELOG.md).
+_MODEL_NAME = "openai/gpt-oss-20b"
 
 _PARSE_JOB_SYSTEM_PROMPT = """Sos un analista de reclutamiento técnico.
 Tu tarea es leer una descripción de vacante y extraer, de forma objetiva
