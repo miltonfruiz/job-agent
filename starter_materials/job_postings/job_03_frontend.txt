@@ -1,0 +1,41 @@
+🚀 NUEVA OPORTUNIDAD | SENIOR FRONTEND DEVELOPER 🇪🇸
+
+¿Eres un/a Senior Frontend Developer con amplia experiencia en arquitectura, testing y desarrollo de aplicaciones web?
+
+Estamos buscando un/a profesional con sólida experiencia técnica para incorporarse a un proyecto de alto nivel en España.
+
+💻 TECH STACK & REQUISITOS CLAVE
+🔹 +8 años de experiencia en al menos uno de estos frameworks:
+Angular | ReactJS | Vue | Polymer | Lit-HTML / Lit-Element
+🔹 5-8 años de experiencia en:
+• JavaScript (ES5/ES6)
+• HTML & CSS
+• JSON
+• REST & Web Services
+• Unit & Component Testing
+• Integration & E2E Testing
+• Visual & Accessibility Testing
+• Git
+• NPM / Yarn / Bower
+• Patrones de diseño y arquitectura Frontend
+🔹 3-5 años de experiencia en:
+• Estrategias Microfront-end
+• Rollup
+• Webpack
+• Node CLI
+⭐ Será valorado adicionalmente:
+• TDD y Contract Testing
+• Docker
+• Java + Spring Framework
+• Azure DevOps
+• TypeScript
+• Inglés fluido
+
+📍 Ubicación: España
+💼 Posición: Senior Frontend Developer
+
+Si cumples con los requisitos y estás interesado/a en la oportunidad, envía tu CV actualizado al siguiente correo:
+📧 yfrecruitments@gmail.com
+📌 Asunto: SENIOR FRONTEND DEVELOPER – ESPAÑA
+
+Si conoces a un/a profesional que pueda encajar, comparte esta oportunidad. 🚀

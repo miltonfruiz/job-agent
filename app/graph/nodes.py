@@ -7,6 +7,8 @@ Convención: cada nodo apendea un entry a trajectory_log con
 de "agent trajectories" del hackathon.
 """
 
+import json
+
 import app.config  # noqa: F401  (carga las variables de .env como side effect)
 from langchain_groq import ChatGroq
 
@@ -62,11 +64,74 @@ def parse_job(state: AgentState) -> dict:
     }
 
 
+_TAILOR_RESUME_SYSTEM_PROMPT = """Sos un asesor de carrera que adapta CVs a
+vacantes específicas.
+
+Reglas estrictas de fidelidad (NO NEGOCIABLES):
+- NUNCA inventes experiencia, tecnologías, servicios específicos, fechas,
+  métricas o logros que no estén literalmente en el CV original.
+- Si el CV dice "AWS" a secas, escribí "AWS" — NO agregues servicios
+  específicos como EC2, RDS, S3, etc. que el CV no menciona.
+- NO agregues fechas a proyectos que no las tenían en el original.
+- NO agregues herramientas, prácticas o procesos (ej: CI/CD, GitHub Actions,
+  pipelines, testing frameworks) que no estén explícitamente mencionados.
+- Antes de escribir cualquier tecnología, fecha o herramienta, verificá que
+  puedas señalar exactamente dónde aparece en el CV original. Si no podés
+  señalarla textualmente, NO la incluyas.
+- Podés reordenar, resumir y enfatizar. NO podés agregar especificidad que
+  el original no tiene.
+- Si el CV no cubre alguna must_have_skill, no la agregues como si la
+  tuviera: es información honesta que el humano revisor necesita ver.
+- Devolvé el CV completo en formato markdown, con secciones claras
+  (Resumen, Experiencia, Skills, Educación, Certificaciones).
+
+Si recibís notas de revisión de una vuelta anterior, aplicá exactamente esos
+cambios sobre el CV ya adaptado, sin rehacer todo desde cero."""
+
+
 def tailor_resume(state: AgentState) -> dict:
-    # TODO: usar state["job_requirements"] + state["cv_raw"] (o
-    # state["tailored_cv"] + state["revision_notes"] si viene de un loop
-    # de revisión) para reescribir el CV.
-    raise NotImplementedError
+    llm = ChatGroq(
+        model=_MODEL_NAME,
+        temperature=0.1,
+        max_tokens=4096,
+        model_kwargs={"reasoning_effort": "low"},
+    )
+
+    is_revision = bool(state.get("revision_notes"))
+
+    if is_revision:
+        human_message = (
+            f"CV ya adaptado en la vuelta anterior:\n{state['tailored_cv']}\n\n"
+            f"Notas de revisión del humano:\n{state['revision_notes']}\n\n"
+            "Aplicá estos cambios y devolvé el CV completo actualizado."
+        )
+        input_summary = f"revisión: {state['revision_notes'][:200]}"
+    else:
+        human_message = (
+            f"CV original:\n{state['cv_raw']}\n\n"
+            f"Requisitos de la vacante (JSON):\n"
+            f"{json.dumps(state['job_requirements'], ensure_ascii=False, indent=2)}"
+        )
+        input_summary = "primera adaptación del CV a la vacante"
+
+    result = llm.invoke(
+        [
+            ("system", _TAILOR_RESUME_SYSTEM_PROMPT),
+            ("human", human_message),
+        ]
+    )
+    tailored_cv = result.content
+
+    return {
+        "tailored_cv": tailored_cv,
+        "revision_notes": None,
+        "trajectory_log": log_step(
+            state,
+            node="tailor_resume",
+            input_summary=input_summary,
+            output_summary=f"CV adaptado generado ({len(tailored_cv)} chars)",
+        ),
+    }
 
 
 def generate_cover_letter(state: AgentState) -> dict:

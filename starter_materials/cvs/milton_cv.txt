@@ -1,0 +1,46 @@
+Milton F. Ruiz
+Full Stack MERN | Cybersecurity & Networks
+Contacto: 341-3245896 | Argentina | Remote/Hybrid | miltonfruizok@outlook.es
+github.com/miltonfruiz | linkedin.com/miltonfruiz
+
+Professional Summary:
+Full Stack Developer with end-to-end experience building MERN and Python applications, implementing secure authentication, REST APIs, and production deployments. Advanced training in networking and cybersecurity provides a strong advantage for projects requiring security, robust architecture, and best practices.
+
+Education:
+- Network Engineer - CISCO. In progress: CCNP ENARSI (final stage)
+- Technician in Programming - UTN. 5th year, 3 subjects left to finish.
+- System Engineering - UTN. 2nd year, 11+ subjects passed.
+
+Certifications:
+- Cybersecurity: CEH, CyberOps, SOC (2024/26)
+- Networks: CCNP Encore, CCNA 1-3, CCST (2023/25)
+- Software Development: MERN Full Stack
+- Current Activities: C-PENT, CTF Bootcamp
+
+Technical Skills:
+- Frontend: React, TypeScript, JavaScript, Zustand, Hook Form, Tailwind, Vite, CSS
+- Backend: Node, Express, Python (FastAPI, Flask), SQLAlchemy, Alembic, Pydantic
+- Databases: PostgreSQL, MongoDB, SQLite
+- Language: English, Level B2 (Upper Intermediate)
+- DevOps & Tools: Git, Linux, Docker, Scrum, Jira, AWS, Render, Netlify
+- Architecture & Security: JWT, roles and permissions, REST API, MVC, OWASP basics, hardening, firewalls, traffic analysis, OSINT, Wireshark
+
+Professional Experience:
+Frontend Engineer, Outlier - Aug/Nov 2025
+- Developing reusable UI components in React + TypeScript.
+- Performance optimization and critical bug fixes.
+- Implementation of user flows and accessibility improvements.
+
+Full Stack Developer, Freelance - 2021-Present
+- End-to-end application development (frontend, backend and DB).
+- Secure authentication, dashboards, and administrative panels.
+- Design of REST APIs and deployment in production environments.
+
+Parolu - Stack MERN (Panel, menu)
+- Social network navigation system (navbar/sidebar) and internationalization (i18n, 6 languages), dynamic chat panel, and collaborative architecture using Git.
+
+SGCursos - Stack Python (end-to-end)
+- End-to-end academic management platform (Flask, SQLAlchemy, PostgreSQL) with 3 main entities and 11 REST endpoints, deployed on Render.
+
+Pet Health Tracker - MERN + Python + TypeScript
+- Complete module (login, registration, password recovery), dashboard/pet profile components for comprehensive health management, built with React, TypeScript, and Zustand.

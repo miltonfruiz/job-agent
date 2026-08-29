@@ -1,0 +1,15 @@
+👨‍💻 SOFTWARE ENGINEER | 2 VACANTES
+🚀 ¡Atención perfiles de tecnología! Hay 2 vacantes abiertas.
+Se buscan Software Engineers para trabajar bajo modalidad híbrida, de lunes a viernes de 9 a 18 hs.
+🎓 Orientado a graduados/as universitarios o terciarios de Ingeniería en Sistemas, Ciencias de la Computación, Informática o carreras afines.
+🔎 Se solicita experiencia en desarrollo web y conocimientos en:
+👉 JavaScript y TypeScript.
+ 👉 Node.js.
+ 👉 React y Next.js.
+ 👉 HTML y CSS.
+ 👉 Metodologías ágiles.
+ 👉 GitLab y herramientas de trabajo colaborativo.
+💡 Consejo: si sos desarrollador/a, tu CV debería permitir identificar tu stack tecnológico en pocos segundos. Creá una sección clara de Tecnologías/Herramientas y después respaldá esos conocimientos mostrando dónde los aplicaste.
+📩 Enviá tu CV a:
+ hiring@fktech.net
+📌 Ref.: BA Software Engineer

@@ -1,0 +1,20 @@
+🚀 ¡ESTAMOS CONTRATANDO! Full Stack Developer
+
+En WorkCapIT buscamos un/a Full Stack Developer para participar en el desarrollo y evolución de una plataforma web de gestión académica.
+
+📍 Lima, Perú (Natalio Sánchez / EPG Av. Salaverry)
+💼 Modalidad: Híbrida | Contrato: Plazo fijo (3 meses con opción a extensión)
+🕘 Horario: Lunes a viernes de 08:30 a.m. a 06:30 p.m.
+
+🎯 El Reto:
+Diseñar y desarrollar aplicaciones web (frontend y backend), construir APIs REST, integrar servicios externos, implementar autenticación segura y gestionar el despliegue en AWS bajo metodologías ágiles.
+
+🛠️ Lo que necesitas:
+Frontend: +3 años en desarrollo; dominio de React, TypeScript, Vite y Tailwind CSS / Bootstrap.
+Backend: Node.js (Express o NestJS), desarrollo de APIs REST, SQL Server o PostgreSQL.
+Cloud & DevOps: Despliegue en AWS (S3, CloudFront, Lambda, EC2, ECS, RDS), Docker y CI/CD.
+Seguridad & Calidad: JWT, Keycloak, pruebas unitarias con Jest y flujo Scrum.
+
+⭐ Plus: Manejo de Azure Repos y Azure Pipelines.
+
+📩 ¿Es para ti? ¡Postúlate ya https://lnkd.in/e_tks5Rv!
