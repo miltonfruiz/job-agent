@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from langgraph.types import Command  # noqa: E402
 
 from app.graph.graph import build_graph  # noqa: E402
+from app.output_writer import save_final_package  # noqa: E402
 
 CV_PATH = Path("starter_materials/cvs/milton_cv.txt")
 
@@ -91,6 +92,15 @@ def main():
         encoding="utf-8",
     )
     print(f"\nTrayectoria completa (incluye human_checkpoint) guardada en {out_path}")
+
+    package_dir = save_final_package(
+        job_path.stem,
+        result["tailored_cv"],
+        result["cover_letter"],
+        result["ats_score"],
+    )
+    print(f"Paquete final (CV.md, cover_letter.md, ats_score.json) en {package_dir}/")
+
     print("\n--- Resultado final ---")
     print(json.dumps(result["ats_score"], ensure_ascii=False, indent=2))
 

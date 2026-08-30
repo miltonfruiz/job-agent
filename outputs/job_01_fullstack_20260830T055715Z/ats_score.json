@@ -1,0 +1,33 @@
+{
+  "score": 53,
+  "must_have_coverage_pct": 54,
+  "keyword_coverage_pct": 50,
+  "missing_must_have": [
+    "Bootstrap",
+    "NestJS",
+    "SQL Server",
+    "S3",
+    "CloudFront",
+    "Lambda",
+    "EC2",
+    "ECS",
+    "CI/CD",
+    "Keycloak",
+    "Jest"
+  ],
+  "missing_keywords": [
+    "Bootstrap",
+    "NestJS",
+    "SQL Server",
+    "S3",
+    "CloudFront",
+    "Lambda",
+    "EC2",
+    "ECS",
+    "CI/CD",
+    "Keycloak",
+    "Jest",
+    "Azure Repos",
+    "Azure Pipelines"
+  ]
+}

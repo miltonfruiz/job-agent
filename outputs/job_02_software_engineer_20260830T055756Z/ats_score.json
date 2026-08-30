@@ -1,0 +1,22 @@
+{
+  "score": 39,
+  "must_have_coverage_pct": 40,
+  "keyword_coverage_pct": 36,
+  "missing_must_have": [
+    "Next.js",
+    "HTML",
+    "CSS",
+    "Agile methodologies",
+    "GitLab",
+    "collaborative tools"
+  ],
+  "missing_keywords": [
+    "Next.js",
+    "HTML",
+    "CSS",
+    "Agile",
+    "GitLab",
+    "collaborative tools",
+    "web development"
+  ]
+}

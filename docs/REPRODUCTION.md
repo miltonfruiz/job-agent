@@ -52,10 +52,26 @@ tokens de Groq)
 
 ## Límites de la capa gratuita de Groq
 
-La capa gratuita limita a 8000 tokens/minuto. Correr el grafo completo
-(parse_job + tailor_resume + generate_cover_letter, con prompts largos
-por el CV completo) puede acercarse a ese límite si se corren varios
-casos seguidos. El código reintenta automáticamente con backoff
-exponencial ante un 429 (`_invoke_with_retry` en `app/graph/nodes.py`).
-Si al reproducir esto ves errores de rate limit persistentes, esperá
-~60 segundos entre casos de prueba o considerá una cuenta de pago.
+La capa gratuita tiene dos límites relevantes:
+
+- **8000 tokens/minuto**: el código reintenta automáticamente con backoff
+  exponencial ante un 429 (`_invoke_with_retry` en `app/graph/nodes.py`).
+- **200,000 tokens/día**: este límite NO se resuelve con el retry corto
+  (el reset puede tardar varios minutos). Si lo alcanzás, Groq indica
+  cuánto esperar en el mensaje de error - hay que esperar ese tiempo y
+  reintentar manualmente. Correr el pipeline completo (parse + tailor +
+  carta) sobre varias vacantes, más el baseline y la evaluación, consume
+  un volumen considerable del cupo diario en una sola sesión de pruebas
+  intensivas.
+  Si al reproducir esto ves errores de rate limit persistentes, esperá el
+  tiempo indicado en el mensaje de error entre casos de prueba, o considerá
+  una cuenta de pago para correr la evaluación completa sin interrupciones.
+
+**Workaround real usado durante el desarrollo:** el límite diario es por
+modelo. Si `openai/gpt-oss-20b` agota su cupo, se puede seguir trabajando
+pasando `GROQ_MODEL=qwen/qwen3.6-27b` como variable de entorno (cupo
+diario separado), sin tocar código:
+
+```bash
+GROQ_MODEL="qwen/qwen3.6-27b" python scripts/test_full_graph.py <vacante>
+```

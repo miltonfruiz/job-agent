@@ -8,6 +8,7 @@ de "agent trajectories" del hackathon.
 """
 
 import json
+import os
 import re
 import time
 
@@ -45,7 +46,14 @@ def _invoke_with_retry(runnable, messages):
 # Evaluar al final del hackathon si openai/gpt-oss-120b mejora el score ATS
 # lo suficiente como para justificar la latencia extra en la solución
 # "avanzada" (ver docs/CHANGELOG.md).
-_MODEL_NAME = "openai/gpt-oss-20b"
+# Configurable por variable de entorno GROQ_MODEL, para poder cambiar de
+# modelo sin tocar código si Groq agota el cupo diario de uno en particular
+# (nos pasó durante el desarrollo: ver docs/REPRODUCTION.md).
+_MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+# Los modelos GPT-OSS aceptan "low"/"medium"/"high"; otros modelos (ej.
+# qwen) solo aceptan "none"/"default" - configurable por si hace falta
+# cambiar de modelo (ver GROQ_MODEL arriba).
+_REASONING_EFFORT = os.getenv("GROQ_REASONING_EFFORT", "low")
 
 _PARSE_JOB_SYSTEM_PROMPT = """Sos un analista de reclutamiento técnico.
 Tu tarea es leer una descripción de vacante y extraer, de forma objetiva
@@ -118,7 +126,7 @@ def tailor_resume(state: AgentState) -> dict:
         model=_MODEL_NAME,
         temperature=0.1,
         max_tokens=4096,
-        model_kwargs={"reasoning_effort": "low"},
+        model_kwargs={"reasoning_effort": _REASONING_EFFORT},
     )
 
     is_revision = bool(state.get("revision_notes"))
@@ -196,7 +204,7 @@ def generate_cover_letter(state: AgentState) -> dict:
         model=_MODEL_NAME,
         temperature=0.1,
         max_tokens=2048,
-        model_kwargs={"reasoning_effort": "low"},
+        model_kwargs={"reasoning_effort": _REASONING_EFFORT},
     )
 
     is_revision = bool(state.get("revision_notes"))

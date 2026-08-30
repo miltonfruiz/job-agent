@@ -1,0 +1,7 @@
+Como Full Stack Developer con experiencia en el stack MERN y en Python, he liderado el desarrollo de aplicaciones completas que incluyen autenticación segura, APIs REST y despliegues en producción. En mi rol más reciente como Frontend Engineer en Outlier, diseñé y optimicé componentes UI reutilizables con React y TypeScript, mejorando el rendimiento y la accesibilidad de la interfaz de usuario.
+
+Durante mi trayectoria freelance, he construido proyectos integrales como Parolu, SGCursos y Pet Health Tracker, donde gestioné tanto el frontend como el backend, implementé autenticación robusta y desarrollé paneles de administración y dashboards. Estas experiencias me han permitido aplicar buenas prácticas de seguridad y arquitectura, alineándome con los requisitos de un entorno híbrido y colaborativo.
+
+Mi enfoque metodológico se basa en prácticas ágiles, utilizando Scrum y herramientas de colaboración como Jira y Git. La gestión de versiones y la colaboración continua se realizan a través de GitHub, garantizando un flujo de trabajo transparente y eficiente.  
+
+Con una sólida base en JavaScript, TypeScript, Node.js y React, y una trayectoria comprobada en entornos de desarrollo web, estoy preparado para contribuir al equipo como Software Engineer, aportando soluciones de alta calidad y colaborando estrechamente con los demás miembros del proyecto.

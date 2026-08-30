@@ -1,0 +1,32 @@
+{
+  "score": 64,
+  "must_have_coverage_pct": 64,
+  "keyword_coverage_pct": 63,
+  "missing_must_have": [
+    "ReactJS",
+    "Polymer",
+    "Lit-Element",
+    "JSON",
+    "NPM",
+    "Yarn",
+    "Bower",
+    "Patrones de diseño",
+    "Rollup",
+    "Webpack"
+  ],
+  "missing_keywords": [
+    "ReactJS",
+    "Polymer",
+    "Lit-Element",
+    "ES5",
+    "ES6",
+    "JSON",
+    "NPM",
+    "Yarn",
+    "Bower",
+    "Rollup",
+    "Webpack",
+    "TDD",
+    "Spring Framework"
+  ]
+}
