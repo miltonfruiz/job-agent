@@ -12,6 +12,7 @@ Uso:
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -47,8 +48,16 @@ def main():
     print("--- Corriendo el grafo hasta el checkpoint humano ---")
     result = graph.invoke(initial_state, config=config)
 
-    # Si el grafo se detuvo en el interrupt, result trae "__interrupt__"
-    if "__interrupt__" in result:
+    if "__interrupt__" not in result:
+        print("El grafo terminó sin pasar por el checkpoint (revisar lógica).")
+        print("\n--- DIAGNÓSTICO ---")
+        print("Claves del resultado:", list(result.keys()))
+        print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+        return
+
+    # Loop: puede haber más de una vuelta de revisión si pedís cambios
+    # más de una vez. Se repite hasta que apruebes o LangGraph termine.
+    while "__interrupt__" in result:
         payload = result["__interrupt__"][0].value
         print("\n>>> CHECKPOINT HUMANO <<<")
         print(payload["message"])
@@ -64,35 +73,26 @@ def main():
             "pedir cambios): "
         )
 
-        if respuesta.strip().lower() == "s":
+        if respuesta.strip().lower() in ("s", "si", "sí", "y", "yes"):
             resume_value = {"approved": True}
         else:
             notes = input("¿Qué querés que cambie?: ")
             resume_value = {"approved": False, "notes": notes}
 
         print("\n--- Reanudando el grafo con tu decisión ---")
-        final_result = graph.invoke(Command(resume=resume_value), config=config)
+        result = graph.invoke(Command(resume=resume_value), config=config)
 
-        # Si volvió a pausarse (pediste cambios y llegó a otro checkpoint),
-        # este script simple no lo vuelve a manejar - se puede correr de
-        # nuevo o extender el loop. Para la demo alcanza con una vuelta.
-        if "__interrupt__" in final_result:
-            print("\nEl grafo volvió a pausarse (nueva vuelta de revisión).")
-            print("Corré el script de nuevo o extendé el loop para manejarlo.")
-        else:
-            print("\n--- Resultado final ---")
-            print(json.dumps(final_result["ats_score"], ensure_ascii=False, indent=2))
-    else:
-        print("El grafo terminó sin pasar por el checkpoint (revisar lógica).")
-        print("\n--- DIAGNÓSTICO ---")
-        print("Claves del resultado:", list(result.keys()))
-        print("\nEstado completo (para depurar):")
-        print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
-
-        state_snapshot = graph.get_state(config)
-        print("\n--- graph.get_state(config) ---")
-        print("Next:", state_snapshot.next)
-        print("Tasks:", state_snapshot.tasks)
+    trajectories_dir = Path("trajectories")
+    trajectories_dir.mkdir(exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    out_path = trajectories_dir / f"full_graph_{job_path.stem}_{timestamp}.json"
+    out_path.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8",
+    )
+    print(f"\nTrayectoria completa (incluye human_checkpoint) guardada en {out_path}")
+    print("\n--- Resultado final ---")
+    print(json.dumps(result["ats_score"], ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
