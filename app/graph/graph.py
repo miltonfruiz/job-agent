@@ -1,3 +1,4 @@
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, END
 
 from app.graph.state import AgentState
@@ -58,4 +59,4 @@ def build_graph():
     )
     graph.add_edge("finalize", END)
 
-    return graph.compile()
+    return graph.compile(checkpointer=MemorySaver())

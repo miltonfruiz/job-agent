@@ -9,13 +9,35 @@ de "agent trajectories" del hackathon.
 
 import json
 import re
+import time
 
 import app.config  # noqa: F401  (carga las variables de .env como side effect)
+from groq import RateLimitError
 from langchain_groq import ChatGroq
+from langgraph.types import interrupt
 
 from app.graph.state import AgentState
 from app.graph.trajectory import log_step
 from app.schemas.job_requirements import JobRequirements
+
+_MAX_RATE_LIMIT_RETRIES = 4
+
+
+def _invoke_with_retry(runnable, messages):
+    """Groq (capa gratuita) limita a 8000 tokens/minuto. Si el pipeline
+    corre varios nodos seguidos en poco tiempo (como en un run completo del
+    grafo), es fácil pisar ese límite. Reintenta con backoff exponencial en
+    vez de fallar todo el pipeline por un 429 transitorio.
+    """
+    last_error = None
+    for attempt in range(_MAX_RATE_LIMIT_RETRIES):
+        try:
+            return runnable.invoke(messages)
+        except RateLimitError as e:
+            last_error = e
+            wait_seconds = 2**attempt  # 1, 2, 4, 8 segundos
+            time.sleep(wait_seconds)
+    raise last_error
 
 # Modelo rápido para iterar durante el desarrollo. Groq deprecó los modelos
 # Llama (llama-3.1-8b-instant / llama-3.3-70b-versatile) en agosto 2026;
@@ -43,11 +65,12 @@ def parse_job(state: AgentState) -> dict:
     llm = ChatGroq(model=_MODEL_NAME, temperature=0)
     structured_llm = llm.with_structured_output(JobRequirements)
 
-    result: JobRequirements = structured_llm.invoke(
+    result: JobRequirements = _invoke_with_retry(
+        structured_llm,
         [
             ("system", _PARSE_JOB_SYSTEM_PROMPT),
             ("human", state["job_posting_raw"]),
-        ]
+        ],
     )
 
     job_requirements = result.model_dump()
@@ -115,16 +138,18 @@ def tailor_resume(state: AgentState) -> dict:
         )
         input_summary = "primera adaptación del CV a la vacante"
 
-    result = llm.invoke(
+    result = _invoke_with_retry(
+        llm,
         [
             ("system", _TAILOR_RESUME_SYSTEM_PROMPT),
             ("human", human_message),
-        ]
+        ],
     )
     tailored_cv = result.content
 
     return {
         "tailored_cv": tailored_cv,
+        # se resetean las notas: ya fueron aplicadas en esta vuelta
         "revision_notes": None,
         "trajectory_log": log_step(
             state,
@@ -191,11 +216,12 @@ def generate_cover_letter(state: AgentState) -> dict:
         )
         input_summary = "primera generación de la carta"
 
-    result = llm.invoke(
+    result = _invoke_with_retry(
+        llm,
         [
             ("system", _GENERATE_COVER_LETTER_SYSTEM_PROMPT),
             ("human", human_message),
-        ]
+        ],
     )
     cover_letter = result.content
 
@@ -257,7 +283,7 @@ def verify_grounding(state: AgentState) -> dict:
     violations = []
     for keyword in state["job_requirements"].get("keywords", []):
         if _keyword_present(keyword, cv_raw):
-            continue
+            continue  # está genuinamente en el CV, no es alucinación
         if _keyword_present(keyword, tailored_cv) or _keyword_present(
             keyword, cover_letter
         ):
@@ -311,6 +337,8 @@ def score_ats(state: AgentState) -> dict:
     matched_keywords = [k for k in keywords if _keyword_present(k, tailored_cv)]
     missing_keywords = [k for k in keywords if not _keyword_present(k, tailored_cv)]
 
+    # Las must-have pesan más que el resto de las keywords: son lo que un
+    # ATS real suele usar como filtro duro, no solo como ranking.
     must_have_coverage = len(matched_must_have) / len(must_have) if must_have else 1.0
     keyword_coverage = len(matched_keywords) / len(keywords) if keywords else 1.0
     score = round((0.7 * must_have_coverage + 0.3 * keyword_coverage) * 100)
@@ -336,11 +364,59 @@ def score_ats(state: AgentState) -> dict:
 
 
 def human_checkpoint(state: AgentState) -> dict:
-    # TODO: implementar con interrupt() de LangGraph para pausar el grafo
-    # y esperar aprobación humana antes de finalize().
-    raise NotImplementedError
+    """Pausa el grafo y muestra CV adaptado + carta + score ATS juntos para
+    una única aprobación humana, cumpliendo la regla del hackathon de que
+    toda acción consecuente (acá: dar por lista una aplicación) requiere
+    aprobación humana antes de ejecutarse.
+
+    Usa interrupt() de LangGraph: la ejecución se detiene acá y devuelve el
+    control a quien invocó el grafo. Para continuar, se vuelve a invocar el
+    grafo con Command(resume=<respuesta del humano>).
+
+    La respuesta esperada del humano es un dict:
+        {"approved": True}
+        o
+        {"approved": False, "notes": "texto con lo que hay que cambiar"}
+    """
+    human_response = interrupt(
+        {
+            "tailored_cv": state.get("tailored_cv"),
+            "cover_letter": state.get("cover_letter"),
+            "ats_score": state.get("ats_score"),
+            "grounding_violations": state.get("grounding_violations"),
+            "message": "Revisá el CV, la carta y el score ATS. ¿Aprobás "
+            "esta aplicación tal como está, o pedís cambios?",
+        }
+    )
+
+    approved = bool(human_response.get("approved"))
+    notes = human_response.get("notes") if not approved else None
+
+    return {
+        "human_approved": approved,
+        "revision_notes": notes,
+        "trajectory_log": log_step(
+            state,
+            node="human_checkpoint",
+            input_summary=f"ats_score={state.get('ats_score', {}).get('score')}",
+            output_summary="aprobado" if approved else f"revisión pedida: {notes}",
+        ),
+    }
 
 
 def finalize(state: AgentState) -> dict:
-    # TODO: armar el paquete final de salida (CV + carta + score + log)
-    raise NotImplementedError
+    """Cierra el grafo una vez aprobado por el humano. El paquete final ya
+    está armado en el state (tailored_cv, cover_letter, ats_score) — este
+    nodo solo deja registro de que la aplicación quedó lista, para que
+    quien invoque el grafo desde afuera (API o script) sepa que puede
+    guardar/entregar el resultado.
+    """
+    return {
+        "trajectory_log": log_step(
+            state,
+            node="finalize",
+            input_summary="aplicación aprobada por el humano",
+            output_summary=f"paquete final listo, ats_score="
+            f"{state.get('ats_score', {}).get('score')}",
+        ),
+    }
