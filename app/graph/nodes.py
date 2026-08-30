@@ -8,6 +8,7 @@ de "agent trajectories" del hackathon.
 """
 
 import json
+import re
 
 import app.config  # noqa: F401  (carga las variables de .env como side effect)
 from langchain_groq import ChatGroq
@@ -124,7 +125,6 @@ def tailor_resume(state: AgentState) -> dict:
 
     return {
         "tailored_cv": tailored_cv,
-        # se resetean las notas: ya fueron aplicadas en esta vuelta
         "revision_notes": None,
         "trajectory_log": log_step(
             state,
@@ -211,6 +211,34 @@ def generate_cover_letter(state: AgentState) -> dict:
     }
 
 
+_GENERIC_SUFFIX_WORDS = {"js", "css", "server", "framework"}
+
+
+def _keyword_present(term: str, text: str) -> bool:
+    """Compara si `term` está presente en `text`, tolerando variantes de
+    términos compuestos (ej: CV dice "Node", vacante pide "Node.js") sin
+    generar falsos positivos con palabras genéricas embebidas (ej: "SQL"
+    dentro de "PostgreSQL" no debe contar como match de "SQL Server").
+
+    Estrategia: primero intenta la frase exacta. Si no matchea, separa el
+    término en palabras, descarta sufijos genéricos (js, css, server...) y
+    busca la(s) palabra(s) núcleo restante(s) como palabra completa
+    (con límites de palabra, \\b) en el texto.
+    """
+    term_lower = term.lower()
+    text_lower = text.lower()
+
+    if term_lower in text_lower:
+        return True
+
+    tokens = re.findall(r"[a-z0-9+]+", term_lower)
+    core_tokens = [t for t in tokens if t not in _GENERIC_SUFFIX_WORDS] or tokens
+
+    return any(
+        re.search(rf"\b{re.escape(tok)}\b", text_lower) for tok in core_tokens
+    )
+
+
 _MAX_GROUNDING_RETRIES = 2
 
 
@@ -222,16 +250,17 @@ def verify_grounding(state: AgentState) -> dict:
     especificidad, el mismo patrón que causó las alucinaciones de
     AWS/RDS/EC2/CI-CD documentadas en el changelog.
     """
-    cv_lower = state["cv_raw"].lower()
-    tailored_lower = (state.get("tailored_cv") or "").lower()
-    letter_lower = (state.get("cover_letter") or "").lower()
+    cv_raw = state["cv_raw"]
+    tailored_cv = state.get("tailored_cv") or ""
+    cover_letter = state.get("cover_letter") or ""
 
     violations = []
     for keyword in state["job_requirements"].get("keywords", []):
-        kw_lower = keyword.lower()
-        if kw_lower in cv_lower:
-            continue  # está genuinamente en el CV, no es alucinación
-        if kw_lower in tailored_lower or kw_lower in letter_lower:
+        if _keyword_present(keyword, cv_raw):
+            continue
+        if _keyword_present(keyword, tailored_cv) or _keyword_present(
+            keyword, cover_letter
+        ):
             violations.append(keyword)
 
     retries = state.get("grounding_retries", 0)
@@ -268,9 +297,42 @@ def verify_grounding(state: AgentState) -> dict:
 
 
 def score_ats(state: AgentState) -> dict:
-    # TODO: comparar state["tailored_cv"] contra state["job_requirements"]
-    # y devolver {"ats_score": {"score": 0-100, "missing_keywords": [...]}}
-    raise NotImplementedError
+    """Scoring determinístico (sin LLM) de qué tan bien tailored_cv cubre
+    los requisitos de la vacante. Sirve como verificación automática antes
+    del checkpoint humano, y como métrica objetiva y reproducible para
+    comparar baseline vs. agente (mismo cálculo en ambos casos).
+    """
+    tailored_cv = state.get("tailored_cv") or ""
+    must_have = state["job_requirements"].get("must_have_skills", [])
+    keywords = state["job_requirements"].get("keywords", [])
+
+    matched_must_have = [s for s in must_have if _keyword_present(s, tailored_cv)]
+    missing_must_have = [s for s in must_have if not _keyword_present(s, tailored_cv)]
+    matched_keywords = [k for k in keywords if _keyword_present(k, tailored_cv)]
+    missing_keywords = [k for k in keywords if not _keyword_present(k, tailored_cv)]
+
+    must_have_coverage = len(matched_must_have) / len(must_have) if must_have else 1.0
+    keyword_coverage = len(matched_keywords) / len(keywords) if keywords else 1.0
+    score = round((0.7 * must_have_coverage + 0.3 * keyword_coverage) * 100)
+
+    ats_score = {
+        "score": score,
+        "must_have_coverage_pct": round(must_have_coverage * 100),
+        "keyword_coverage_pct": round(keyword_coverage * 100),
+        "missing_must_have": missing_must_have,
+        "missing_keywords": missing_keywords,
+    }
+
+    return {
+        "ats_score": ats_score,
+        "trajectory_log": log_step(
+            state,
+            node="score_ats",
+            input_summary=f"{len(must_have)} must-have skills, {len(keywords)} keywords",
+            output_summary=f"score={score}, faltan {len(missing_must_have)} "
+            f"must-have skills: {missing_must_have}",
+        ),
+    }
 
 
 def human_checkpoint(state: AgentState) -> dict:

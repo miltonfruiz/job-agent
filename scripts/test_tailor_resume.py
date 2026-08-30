@@ -24,6 +24,7 @@ from app.graph.nodes import (  # noqa: E402
     tailor_resume,
     generate_cover_letter,
     verify_grounding,
+    score_ats,
 )
 
 CV_PATH = Path("starter_materials/cvs/milton_cv.txt")
@@ -78,6 +79,11 @@ def main():
         print(state["tailored_cv"])
         print("--- Carta regenerada ---")
         print(state["cover_letter"])
+
+    print("\n--- Calculando ATS score ---")
+    score_result = score_ats(state)
+    state.update(score_result)
+    print(json.dumps(state["ats_score"], ensure_ascii=False, indent=2))
 
     TRAJECTORIES_DIR.mkdir(exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
