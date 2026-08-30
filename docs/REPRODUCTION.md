@@ -26,19 +26,30 @@ Corre sobre todas las vacantes en `starter_materials/job_postings/`,
 calcula el mismo ATS score que se usa para el agente, y guarda cada
 resultado en `trajectories/baseline/`.
 
-## Correr el agente completo
+## Correr el agente completo (con checkpoint humano real)
 
 ```bash
-uvicorn app.main:app --reload
-# POST a /applications con job_posting + cv
+python scripts/test_full_graph.py starter_materials/job_postings/job_01_fullstack.txt
 ```
+
+Corre el grafo completo (parseo → tailoring → carta → verificación →
+score → checkpoint humano real vía `interrupt()` → cierre), pidiendo tu
+aprobación por consola. Guarda la trayectoria completa en `trajectories/`
+y el paquete final (CV.md, cover_letter.md, ats_score.json) en `outputs/`.
+
+_(Nota: la exposición vía FastAPI (`POST /applications`) está fuera de
+alcance para esta entrega - el flujo completo ya está demostrado y es
+reproducible vía este script.)_
 
 ## Correr la evaluación (baseline vs. agente)
 
 ```bash
-# TODO: script que compare ats_score de ambos sobre el mismo set de casos
-python -m tests.run_evaluation
+python scripts/run_evaluation.py
 ```
+
+Corre el agente (auto-aprobado, para medir en batch) y el baseline sobre
+las 3 vacantes de `starter_materials/job_postings/`, y guarda la tabla
+comparativa en `docs/EVALUATION.md`.
 
 ## Datos requeridos
 
@@ -47,8 +58,26 @@ nunca información personal real de terceros).
 
 ## Runtime y costo aproximado
 
-(completar una vez corridos los experimentos: tiempo por caso, costo en
-tokens de Groq)
+Basado en las corridas reales hechas durante el desarrollo (modelo
+`openai/gpt-oss-20b` en Groq, `reasoning_effort="low"`):
+
+| Paso                                                                                           | Tiempo aproximado    | Costo                     |
+| ---------------------------------------------------------------------------------------------- | -------------------- | ------------------------- |
+| `parse_job` (1 llamada LLM)                                                                    | ~2-4 s               | Capa gratuita de Groq: $0 |
+| `tailor_resume` (1 llamada LLM)                                                                | ~3-6 s               | $0                        |
+| `generate_cover_letter` (1 llamada LLM)                                                        | ~3-5 s               | $0                        |
+| `verify_grounding` (sin LLM, determinístico)                                                   | <0.1 s               | $0                        |
+| `score_ats` (sin LLM, determinístico)                                                          | <0.1 s               | $0                        |
+| **Total por aplicación** (sin reintento de grounding, sin contar el tiempo de revisión humana) | **~10-15 s**         | **$0**                    |
+| Con 1 reintento de `verify_grounding` (vuelve a `tailor_resume` + `generate_cover_letter`)     | ~20-25 s adicionales | $0                        |
+
+**Costo real de la capa gratuita de Groq:** $0 en dólares, pero con límite
+de tokens (ver sección siguiente). Durante el desarrollo completo (todas
+las iteraciones del changelog + baseline + evaluación sobre 3 vacantes)
+se consumió casi el 100% del cupo diario de 200,000 tokens del modelo
+`openai/gpt-oss-20b` en una sola sesión de trabajo intensivo. Para uso
+normal (unas pocas aplicaciones por día), el cupo gratuito alcanza sin
+problema.
 
 ## Límites de la capa gratuita de Groq
 
