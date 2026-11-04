@@ -35,7 +35,7 @@ Angular | ReactJS | Vue | Polymer | Lit-HTML / Lit-Element
 💼 Posición: Senior Frontend Developer
 
 Si cumples con los requisitos y estás interesado/a en la oportunidad, envía tu CV actualizado al siguiente correo:
-📧 yfrecruitments@gmail.com
+📧 recruiter@example.com
 📌 Asunto: SENIOR FRONTEND DEVELOPER – ESPAÑA
 
 Si conoces a un/a profesional que pueda encajar, comparte esta oportunidad. 🚀

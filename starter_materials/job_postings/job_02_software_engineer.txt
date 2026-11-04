@@ -11,5 +11,5 @@ Se buscan Software Engineers para trabajar bajo modalidad híbrida, de lunes a v
  👉 GitLab y herramientas de trabajo colaborativo.
 💡 Consejo: si sos desarrollador/a, tu CV debería permitir identificar tu stack tecnológico en pocos segundos. Creá una sección clara de Tecnologías/Herramientas y después respaldá esos conocimientos mostrando dónde los aplicaste.
 📩 Enviá tu CV a:
- hiring@fktech.net
+ hiring@example.com
 📌 Ref.: BA Software Engineer

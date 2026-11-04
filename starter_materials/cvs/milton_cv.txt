@@ -1,7 +1,7 @@
 Milton F. Ruiz
 Full Stack MERN | Cybersecurity & Networks
-Contacto: 341-3245896 | Argentina | Remote/Hybrid | miltonfruizok@outlook.es
-github.com/miltonfruiz | linkedin.com/miltonfruiz
+Contacto: 555-0100 | Argentina | Remote/Hybrid | candidate@example.com
+github.com/miltonfruiz | linkedin.com/candidate
 
 Professional Summary:
 Full Stack Developer with end-to-end experience building MERN and Python applications, implementing secure authentication, REST APIs, and production deployments. Advanced training in networking and cybersecurity provides a strong advantage for projects requiring security, robust architecture, and best practices.
