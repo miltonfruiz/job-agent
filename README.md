@@ -59,7 +59,3 @@ las 3 vacantes de prueba, el agente tuvo **0 skills fabricadas** en todos los
 casos. El baseline, sin ninguna verificación, fabricó 11, 3 y 15 skills
 respectivamente para inflar su match — su score "en bruto" parece más alto,
 pero no es confiable sin auditarlo a mano.
-
-## Hot take
-
-(completar al final, después de correr los experimentos)
